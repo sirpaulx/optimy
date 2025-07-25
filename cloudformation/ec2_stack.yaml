@@ -1,12 +1,66 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: EC2 instance with Docker to host Optimy
+Description: Optimy - EC2 Instance + RDS MySQL Deployment
+
+Parameters:
+  KeyName:
+    Type: String
+    Description: Name of an existing EC2 KeyPair
+  DBUsername:
+    Type: String
+    Default: admin
+    Description: The database admin account username
+  DBPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+    Description: The database admin account password
+
 Resources:
+  OptimySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow web and DB traffic
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow EC2 to access RDS
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 3306
+        ToPort: 3306
+        SourceSecurityGroupId: !Ref OptimySecurityGroup
+
+  OptimyDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBName: optimy_db
+      VPCSecurityGroups:
+      - !Ref RDSSecurityGroup
+      PubliclyAccessible: true
+      BackupRetentionPeriod: 0
+      EngineVersion: 8.0.33
+
   OptimyInstance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
-      ImageId: ami-0c55b159cbfafe1f0 # Amazon Linux 2 AMI (for example)
-      KeyName: your-key-pair
+      ImageId: ami-0c55b159cbfafe1f0 # Use latest Amazon Linux 2 AMI
+      KeyName: !Ref KeyName
       SecurityGroups:
       - !Ref OptimySecurityGroup
       UserData:
@@ -18,16 +72,23 @@ Resources:
           usermod -a -G docker ec2-user
           curl -fsSL https://get.docker.com -o get-docker.sh
           sh get-docker.sh
+          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
+            -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          yum install -y git
           git clone https://github.com/yourusername/optimy.git
           cd optimy
+          echo "DB_HOST=${OptimyDB.Endpoint.Address}" >> .env
+          echo "DB_USER=${DBUsername}" >> .env
+          echo "DB_PASS=${DBPassword}" >> .env
+          echo "DB_NAME=optimy_db" >> .env
           docker-compose up -d
 
-  OptimySecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Enable HTTP access
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-        CidrIp: 0.0.0.0/0
+Outputs:
+  EC2PublicIP:
+    Description: Public IP of the EC2 instance
+    Value: !GetAtt OptimyInstance.PublicIp
+
+  RDSHostname:
+    Description: RDS MySQL Endpoint
+    Value: !GetAtt OptimyDB.Endpoint.Address

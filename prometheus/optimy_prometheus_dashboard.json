@@ -1,0 +1,63 @@
+{
+  "title": "Optimy App (Prometheus)",
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Container CPU Usage (%)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{name=~\".*optimy.*\"}[1m]) * 100",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Container Memory Usage (MB)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "container_memory_usage_bytes{name=~\".*optimy.*\"} / 1024 / 1024",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megabytes"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "App Uptime",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "time() - process_start_time_seconds",
+          "legendFormat": "Uptime (s)"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Container Restarts",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "changes(container_last_seen{name=~\".*optimy.*\"}[5m])",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 37,
+  "version": 1,
+  "refresh": "30s"
+}

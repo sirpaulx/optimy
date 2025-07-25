@@ -1,0 +1,33 @@
+Functional Test Requirements for Optimy
+
+Overview:
+This test ensures that the Optimy PHP application is running correctly,
+connects to the MySQL database, and displays expected content from the 'test' table.
+
+Test Goals:
+1. Launch the application in a headless browser.
+2. Navigate to the local application URL (http://localhost:8083/).
+3. Wait for the presence of at least one <p> tag.
+4. Extract and verify the text content of the <p> element.
+5. Assert that:
+   - At least one <p> tag exists
+   - The text content is not empty
+6. Report the test result as PASS or FAIL.
+
+Tools Used:
+- Node.js
+- Selenium WebDriver
+- Headless Chrome (via chromedriver)
+
+Pass Criteria:
+- The page renders correctly in headless mode.
+- The <p> tag(s) are found.
+- The text content from the database is displayed.
+
+Fail Criteria:
+- Timeout waiting for page content
+- No <p> tags found
+- Empty or incorrect content
+
+Command to Run:
+node tests/selenium_test.js
