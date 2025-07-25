@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    ports:
+    - "80:80"
+    - "443:443"
+    - "8082:8080"
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./traefik.yml:/etc/traefik/traefik.yml
+    - ./letsencrypt:/letsencrypt
+    networks:
+    - web
+    environment:
+    - TRAEFIK_CERTIFICATESRESOLVERS_myresolver_ACME_EMAIL=sirpaulx@gmail.com
+    - TRAEFIK_CERTIFICATESRESOLVERS_myresolver_ACME_STORAGE=/letsencrypt/acme.json
+
+  optimy_project-web:
+    image: optimy_project-web
+    container_name: optimy_project-web
+    networks:
+    - web
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.optimy.rule=Host(`optimy.duckdns.org`)"
+    - "traefik.http.routers.optimy.entrypoints=websecure"
+    - "traefik.http.routers.optimy.tls.certresolver=myresolver"
+    - "traefik.http.services.optimy.loadbalancer.server.port=80"
+
+networks:
+  web:
+    driver: bridge
