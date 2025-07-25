@@ -1,0 +1,18 @@
+server:
+  log_level: info
+
+metrics:
+  wal_directory: /tmp/wal
+  global:
+    scrape_interval: 15s
+  configs:
+  - name: optimy-prometheus
+    scrape_configs:
+    - job_name: 'cadvisor'
+      static_configs:
+      - targets: [ 'cadvisor:8080' ]
+    remote_write:
+    - url: https://prometheus-prod-58-prod-eu-central-0.grafana.net/api/prom
+      basic_auth:
+        username:
+        password:
